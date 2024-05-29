@@ -12,12 +12,13 @@ class OpenAILLMProvider(OpenAIProvider):
                  llm_model_name: str,
                  temperature: float = 1.0
                 ):
-        super().__init__(api_base=api_base,
+        super().__init__(model_name = llm_model_name,
+                         api_base=api_base,
                          api_key=api_key,
                          http_client=httpx.Client(verify=False)
                         )
-        self.model_name = llm_model_name
         self.temperature = temperature
+        self.is_using_legacy_chat_api = False
         
     def chat_completion(self, user_assistant_messages: Iterable[ChatCompletionMessageParam]):
         response = self.oai_client.chat.completions.create(

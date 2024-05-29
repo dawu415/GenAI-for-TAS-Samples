@@ -11,11 +11,11 @@ class OpenAIEmbeddingProvider(OpenAIProvider):
                  embed_model_name: str,
                  is_instructor_model: bool = False
                 ):
-        super().__init__(api_base=api_base,
+        super().__init__(model_name = embed_model_name,
+                         api_base=api_base,
                          api_key=api_key,
                          http_client=httpx.Client(verify=False)
                         )
-        self.model_name = embed_model_name
         self.is_instructor_model = is_instructor_model
         
     def get_embeddings_with_instructions(self, instruction, text):

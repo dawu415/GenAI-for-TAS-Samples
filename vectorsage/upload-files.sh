@@ -1,10 +1,11 @@
 #!/bin/bash
-# Usage: upload_files.sh CHUNKER_ROUTE TOPIC_DISPLAY_NAME DOCUMENT_DIRECTORY [TOKEN_CHUNK_SIZE]
+# Usage: upload_files.sh CHUNKER_ROUTE TOPIC_DISPLAY_NAME DOCUMENT_DIRECTORY [TOKEN_CHUNK_SIZE] [USE_HTTPS]
 
 CHUNKER_ROUTE="${1}"
 TOPIC_DISPLAY_NAME="${2}"
 DOCUMENT_DIRECTORY="${3:-./OS-CF-docs-Apr-2024/}"
 TOKEN_CHUNK_SIZE="${4:-512}"
+USE_HTTPS="{5:-True}"
 
 if [[ -z "$CHUNKER_ROUTE" || -z "$TOPIC_DISPLAY_NAME" || -z "$DOCUMENT_DIRECTORY" ]]; then
     echo "Usage: $0 <CHUNKER_ROUTE> <TOPIC_DISPLAY_NAME> <DOCUMENT_DIRECTORY> [TOKEN_CHUNK_SIZE]"
@@ -15,8 +16,14 @@ fi
 upload_file() {
     local file_path="$1"
     abs_path=$(realpath "$file_path")
+    scheme="https"
     
-    curl -s -X POST https://${CHUNKER_ROUTE}/upload_files \
+    if [ "${USE_HTTPS}" != "True" ] 
+    then
+      scheme="http"
+    fi    
+ 
+    curl -s -X POST ${scheme}://${CHUNKER_ROUTE}/upload_files \
         -F "files=@${abs_path}" \
         -F "topic_display_name=${TOPIC_DISPLAY_NAME}" \
         -F "token_chunk_size=${TOKEN_CHUNK_SIZE}"

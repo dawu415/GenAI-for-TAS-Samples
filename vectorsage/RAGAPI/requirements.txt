@@ -1,8 +1,9 @@
 markdown2
 numpy
+scipy
 transformers
 spacy>=3.0.0,<4.0.0
-en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl
+en_core_web_lg @ https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.7.1/en_core_web_lg-3.7.1-py3-none-any.whl
 jinja2>=3.0.0
 openai
 cfenv
@@ -12,3 +13,5 @@ psycopg[binary]
 flask
 flask-restx
 dataclasses-json
+yake
+scikit-learn
