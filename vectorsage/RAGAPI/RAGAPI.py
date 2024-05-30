@@ -7,7 +7,7 @@ import os
 import argparse
 import logging
 from flask import Flask, request, Response, stream_with_context
-from flask_restx import Api, Resource, reqparse, fields, abort
+from flask_restx import Api, Resource, reqparse, fields, abort, inputs
 from cfenv import AppEnv
 from werkzeug.datastructures import FileStorage
 
@@ -105,9 +105,9 @@ class CreateKnowledgeBase(Resource):
 #######
 @api.route('/list_knowledge_bases')
 class ListKnowledgeBases(Resource):
-    @api.param('topic_display_name_only','Return only topic display names', type=bool, default=False)
+    @api.param('topic_display_name_only','Return only topic display names', type=inputs.boolean, default=False)
     def get(self):
-        topic_display_name_only = request.args.get('topic_display_name_only', type=bool, default=False)
+        topic_display_name_only = request.args.get('topic_display_name_only', type=inputs.boolean, default=False)
 
         try:
             knowledge_bases = RAG_PROVIDER.get_all_knowledgebases()
@@ -291,9 +291,9 @@ class GetEmbeddingContent(Resource):
 query_parser = reqparse.RequestParser()
 query_parser.add_argument('query', required=True, help='The User query')
 query_parser.add_argument('topic_display_name', required=True, help='Topic display name')
-query_parser.add_argument('do_lost_in_middle_reorder', type=bool, default=False, help='Perform lost in middle reordering')
+query_parser.add_argument('do_lost_in_middle_reorder', type=inputs.boolean, default=False, help='Perform lost in middle reordering')
 query_parser.add_argument('override_context_learning', default=None, help='Override context learning. This will do a one time overwrite of any context learning that is stored with the knowledge base.')
-query_parser.add_argument('stream', type=bool, default=False, help='Initiate a streaming response')
+query_parser.add_argument('stream', type=inputs.boolean, default=False, help='Initiate a streaming response')
 @api.route('/respond_to_user_query')
 class RespondToUserQuery(Resource):
     @api.expect(query_parser)
@@ -326,12 +326,12 @@ class RespondToUserQuery(Resource):
 
         def process_query():
             results = RAG_PROVIDER.respond_to_user_query(
-                query=query,
-                topic_display_name=topic_display_name,
-                override_context_learning=context_learning,
-                lost_in_middle_reorder=do_lost_in_middle_reorder,
-                stream=stream
-            )
+                                                        query=query,
+                                                        topic_display_name=topic_display_name,
+                                                        override_context_learning=context_learning,
+                                                        lost_in_middle_reorder=do_lost_in_middle_reorder,
+                                                        stream=stream
+                                                        )
             return results
 
         if stream:

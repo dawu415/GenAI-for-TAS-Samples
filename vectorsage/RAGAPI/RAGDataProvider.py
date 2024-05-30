@@ -396,25 +396,30 @@ Respond appropriately based on the guidelines above, without mentioning them to 
         message = context_learning + [{"role": "user", "content": prompt}]
 
         response = None
-        if stream:
-            streaming_response = self.oai_llm.stream_chat_completion(message)
 
-            if self.oai_llm.is_using_legacy_chat_api:
-                for message in streaming_response:
-                    if message.choices[0].text != None:
-                        # Unfortunately, we have to deal with escaping newlines, otherwise
-                        # some frontend libraries just strip the newlines out.
-                        escaped_content = message.choices[0].text.replace("\n", "\\n")
-                        yield f"data: {json.dumps(escaped_content)}\n\n".encode('utf-8')
-            else:
-                for message in streaming_response:
-                    if message.choices[0].delta.content != None:
-                        # Unfortunately, we have to deal with escaping newlines, otherwise
-                        # some frontend libraries just strip the newlines out.
-                        escaped_content = message.choices[0].delta.content.replace("\n", "\\n")
-                        yield f"data: {json.dumps(escaped_content)}\n\n".encode('utf-8')
+        print(f"Is Streaming: {stream}")
+        if stream:
+            response = self._do_stream_chat(message)
         else:
             # Send the new prompt to an LLM to generate a response.
             response = self.oai_llm.chat_completion(message)
-            return response
+        
+        return response
 
+    # Separate out the stream chat method since we're using yield.
+    def _do_stream_chat(self, message: List[Dict[str,Any]]):
+        streaming_response = self.oai_llm.stream_chat_completion(message)
+        
+        def process_message_content(content: str):
+            # Escape newlines to prevent frontend issues
+            escaped_content = content.replace("\n", "\\n")
+            return f"data: {json.dumps(escaped_content)}\n\n".encode('utf-8')
+        
+        for message in streaming_response:
+            if self.oai_llm.is_using_legacy_chat_api:
+                content = message.choices[0].text
+            else:
+                content = message.choices[0].delta.content
+            
+            if content is not None:
+                yield process_message_content(content)
