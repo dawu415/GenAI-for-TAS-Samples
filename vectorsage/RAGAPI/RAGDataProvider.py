@@ -228,7 +228,7 @@ Query: {query}
 Context:
 {context}
 ---
-Respond appropriately based on the guidelines above, without mentioning them to the user.
+Respond appropriately based on the rules above in a professional document in Markdown format.Do not tell the user you are using a provided context or that there exists any context because the user cannot see the context.
 """
     @classmethod
     def get_supported_prompt_template_variables(cls):
@@ -248,17 +248,14 @@ Respond appropriately based on the guidelines above, without mentioning them to 
             prompt_template = kb.prompt_template
 
         statistics = DocTransformPipeline(
-                                # Cheat with the model name for now...
-                                [GatherStatistics(model_tokenizer_path ="mistralai/" + self.oai_llm.model_name,
+                                [GatherStatistics(model_tokenizer_path =self.oai_llm.model_name,
                                                   query=query,
                                                   prompt_template=prompt_template,
                                                   supported_template_variables=RAGDataProvider.get_supported_prompt_template_variables())]
                                 ).run_docchunks(chunks)        
 
         return statistics
-            
-
-
+        
     def get_embedding_content(  self,
                                 query: str, 
                                 topic_display_name: str,
@@ -282,7 +279,7 @@ Respond appropriately based on the guidelines above, without mentioning them to 
                                           ).extract_keywords(query)
 
         logging.info(f"Query: {query}")
-        logging.info(f"Keyswords found for query: {query_keywords}")
+        logging.info(f"Keywords found for query: {query_keywords}")
 
         # Use the result to search for similar content from the vector db
         results = self.database.get_content_with_cosine_similarity(queryembedding=query_embedding, 
@@ -368,7 +365,7 @@ Respond appropriately based on the guidelines above, without mentioning them to 
                                                             for r in results
                                     ])    
         # Use the found content and form a prompt
-        context = " ".join([re.sub(r'\n+', ' ', kbchunk.content) for kbchunk in document_chunks])
+        context = " ".join([kbchunk.content.replace("\n", " ") for kbchunk in document_chunks]) #" ".join([kbchunk.content for kbchunk in document_chunks])
 
         # Create prompt variables
         # These must match what is available at get_supported_prompt_template_variables
@@ -385,7 +382,11 @@ Respond appropriately based on the guidelines above, without mentioning them to 
             raise Exception(f"Unsupported keys in prompt variables: {unsupported_keys}")
 
         # Format the prompt template
-        prompt = kb.prompt_template.format_map(prompt_variables)
+        prompt = ""
+        if kb.prompt_template:
+            prompt = kb.prompt_template.format_map(prompt_variables)
+        else:
+            prompt = self.get_default_prompt_template().format_map(prompt_variables)
 
         # Set the context learning from knowledge base, otherwise, override it with provided list
         context_learning = kb.context_learning

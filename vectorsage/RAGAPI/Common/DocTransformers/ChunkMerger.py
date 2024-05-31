@@ -51,6 +51,7 @@ class ChunkMerger(DocTransformer):
 
         for _, chunkGroup in groupby(texts, key=group_key):
             chunkGroup = list(chunkGroup)
+            
             if len(chunkGroup) == 1:
                 merged.append(chunkGroup[0])
             else:
@@ -59,7 +60,7 @@ class ChunkMerger(DocTransformer):
                 for u, v in zip(range(len(chunkGroup) - 1), range(1, len(chunkGroup))):
                     max_overlap = 0
                     for i in range(1, min(len(chunkGroup[u].content), len(chunkGroup[v].content)) + 1):
-                        if chunkGroup[u].content.strip()[-i:] == chunkGroup[v].content.strip()[:i]:
+                        if chunkGroup[u].content[-i:] == chunkGroup[v].content[:i]:
                             max_overlap = i
                     overlap_count_list.append(max_overlap)
 
@@ -75,6 +76,10 @@ class ChunkMerger(DocTransformer):
                 max_similarity_position = position_value[max_similarity_chunk.metadata["id"]]
                 sigma = 1.0  # Standard deviation for the Gaussian function
 
+                # Gaussian weighting is used for recomputing the cosine similarity 
+                # It is used to assign weights to each chunk in a group relative to the highest 
+                # scoring chunk. i.e. Highest scroing chunk has highest weighting. Adjoining chunks
+                # start having lower weight as it goes further from the highest scoring chunk. 
                 for idx, chunk in enumerate(chunkGroup):
                     distance = position_value[chunk.metadata["id"]] - max_similarity_position
                     weight = self._gaussian_weight(distance, sigma)
@@ -82,10 +87,7 @@ class ChunkMerger(DocTransformer):
                     weighted_similarity_sum += chunk.metadata["cosine_similarity"] * weight
 
                     offset = overlap_count_list[idx] if idx < len(overlap_count_list) else 0
-                    if idx == 0:
-                        content = chunk.content[:len(chunk.content) - offset]
-                    else:
-                        content += chunk.content[offset:]
+                    content += chunk.content[:len(chunk.content) - offset]
 
                     metadata = self._merge_dicts(metadata, chunk.metadata)
 
@@ -106,8 +108,6 @@ class ChunkMerger(DocTransformer):
 
         if self.sort_results_by_cosine_similarity:
             merged.sort(key=lambda x: x.metadata["cosine_similarity"], reverse=True)
-
-        return merged
 
         return merged
 

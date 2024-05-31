@@ -8,9 +8,10 @@ applications:
   services:
   - genai
   - postgres-db
+  - llm-config
   command: python RAGAPI.py
   env:
     EMBED_MODEL: hkunlp/instructor-xl
     EMBED_MODEL_IS_INSTRUCTOR: True
-    LLM_MODEL: Mistral-7B-Instruct-v0.2
+    LLM_MODEL: mistralai/Mistral-7B-Instruct-v0.2
   

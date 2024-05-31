@@ -105,7 +105,7 @@ class CreateKnowledgeBase(Resource):
 #######
 @api.route('/list_knowledge_bases')
 class ListKnowledgeBases(Resource):
-    @api.param('topic_display_name_only','Return only topic display names', type=inputs.boolean, default=False)
+    @api.param('topic_display_name_only','Return only topic display names', type=bool, default=False)
     def get(self):
         topic_display_name_only = request.args.get('topic_display_name_only', type=inputs.boolean, default=False)
 
@@ -352,11 +352,11 @@ def initialize_and_start_service(args):
 
     # API Client configuration
     api_base = args.api_base if args.api_base else \
-                        cf_env.get_service(name='llm-service').credentials['api_base'] if cf_env.get_service(name='llm-service') else \
+                        cf_env.get_service(name='llm-config').credentials['api_base'] if cf_env.get_service(name='llm-config') and 'api_base' in cf_env.get_service(name='llm-config').credentials else \
                         cf_env.get_service(label='genai-service').credentials['api_base'] if cf_env.get_service(label='genai-service') else None
     
     api_key = args.api_key if args.api_key else \
-                        cf_env.get_service(name='llm-service').credentials['api_key'] if cf_env.get_service(name='llm-service') else \
+                        cf_env.get_service(name='llm-config').credentials['api_key'] if cf_env.get_service(name='llm-config') and 'api_key' in cf_env.get_service(name='llm-config').credentials else \
                         cf_env.get_service(label='genai-service').credentials['api_key'] if cf_env.get_service(label='genai-service') else None
     
     if api_base is None or api_key is None:
@@ -373,9 +373,10 @@ def initialize_and_start_service(args):
     if embedding_api_base is None or embedding_api_key is None:
         raise ValueError("API Base and API Key must be specified for the Embedding Generation Model")
     
-    use_legacy_openaiapi = bool(cf_env.get_service(name='llm-service').credentials['use_legacy_openaiapi']) if cf_env.get_service(name='llm-service') else False
-    hf_token = cf_env.get_service(name='llm-service').credentials['huggingface_token'] if cf_env.get_service(name='llm-service') else ""
+    use_legacy_openaiapi = bool(cf_env.get_service(name='llm-config').credentials['use_legacy_openaiapi']) if cf_env.get_service(name='llm-config') and 'use_legacy_openaiapi' in cf_env.get_service(name='llm-config').credentials else False
+    hf_token = cf_env.get_service(name='llm-config').credentials['huggingface_token'] if cf_env.get_service(name='llm-config')  and 'huggingface_token' in cf_env.get_service(name='llm-config').credentials else ""
 
+    os.environ["HF_TOKEN"] = hf_token
     # Model and chunk sizes
     embed_model_name = args.embedding_model if args.embedding_model else os.environ.get("EMBED_MODEL", "hkunlp/instructor-xl")
     is_instructor_model = args.embed_model_is_instructor if args.embed_model_is_instructor else bool(os.environ.get("EMBED_MODEL_IS_INSTRUCTOR", "true").lower()=="true")        
@@ -386,7 +387,7 @@ def initialize_and_start_service(args):
                                             is_instructor_model=is_instructor_model
                                             )
     
-    llm_model_name = args.llm_model if args.llm_model else os.environ.get("LLM_MODEL", "Mistral-7B-Instruct-v0.2")
+    llm_model_name = args.llm_model if args.llm_model else os.environ.get("LLM_MODEL", "mistralai/Mistral-7B-Instruct-v0.2")
     oai_llm = None
     if use_legacy_openaiapi:
         oai_llm = OpenAILegacyAPILLMProvider(api_base=api_base,
@@ -417,8 +418,8 @@ if __name__ == "__main__":
     parser.add_argument("-e", "--embedding_model", help="Model name for embeddings")
     parser.add_argument("-m", "--llm_model", help="Model name for text generation")
     parser.add_argument("-i", "--embed_model_is_instructor", type=bool, help="Model requires instruction")
-    parser.add_argument("-s", "--api_base", help="Base URL for the OpenAI API. If not specified, search: user-provided-service named llm-service, otherwise GenAI Tile configuration will be used.")
-    parser.add_argument("-a", "--api_key", help="API key for the OpenAI API. If not specified, search: user-provided-service named llm-service, otherwise GenAI Tile configuration will be used.")
+    parser.add_argument("-s", "--api_base", help="Base URL for the OpenAI API. If not specified, search: user-provided-service named llm-config, otherwise GenAI Tile configuration will be used.")
+    parser.add_argument("-a", "--api_key", help="API key for the OpenAI API. If not specified, search: user-provided-service named llm-config, otherwise GenAI Tile configuration will be used.")
     parser.add_argument("-g", "--embedding_api_base", help="Base URL for the OpenAI API for embedding generation.If not specified, search: user-provided-service named embedding-service, otherwise api_base will be used.")
     parser.add_argument("-y", "--embedding_api_key", help="API key for the OpenAI API for embedding generation. If not specified, search: user-provided-service named embedding-service, otherwise api_key will be used.")
     parser.add_argument("-d", "--database", help="Database connection string")
