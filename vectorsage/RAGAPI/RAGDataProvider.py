@@ -6,6 +6,7 @@ from Common.DocTransformers.ChunkReOrder import ChunkReOrder
 from Common.DocTransformers.GatherStatistics import GatherStatistics
 from Common.DocTransformers.KeywordsExtractor import KeywordsExtractor
 from Common.DocTransformers.InstructorReRanker import InstructorReRanker
+from Common.DocTransformers.InformationExtractor import InformationExtractor
 from Common.DocTransformers.TextChunker import ModelTokenizedTextChunker
 from Common.DocTransformers.EmbeddingGenerator import EmbeddingGenerator, InstructorEmbeddingGenerator
 from Common.OpenAIProviders.OpenAIEmbeddingProvider import OpenAIEmbeddingProvider
@@ -291,6 +292,7 @@ Respond appropriately based on the rules above in a professional document in Mar
         # Define a set of postprocessing actions to perform on our retrieved results.
         pipeline_actions = [
             ChunkMerger(),
+            InformationExtractor(llm_provider=self.oai_llm, query=query),
             InstructorEmbeddingGenerator(embedding_provider=self.oai_embed,
                                          embedding_instruction="Represent the {topic_domain} passage for clustering:",
                                          use_metadata_with_embeddings=False),
@@ -345,6 +347,7 @@ Respond appropriately based on the rules above in a professional document in Mar
         # Define a set of postprocessing actions to perform on our retrieved results.
         pipeline_actions = [
             ChunkMerger(),
+            InformationExtractor(llm_provider=self.oai_llm, query=query),
             InstructorEmbeddingGenerator(embedding_provider=self.oai_embed,
                                          embedding_instruction="Represent the {topic_domain} passage for clustering:",
                                          use_metadata_with_embeddings=False),
@@ -365,7 +368,7 @@ Respond appropriately based on the rules above in a professional document in Mar
                                                             for r in results
                                     ])    
         # Use the found content and form a prompt
-        context = " ".join([kbchunk.content.replace("\n", " ") for kbchunk in document_chunks]) #" ".join([kbchunk.content for kbchunk in document_chunks])
+        context = " ".join([re.sub(r'\n+', ' ', kbchunk.content) for kbchunk in document_chunks]) 
 
         # Create prompt variables
         # These must match what is available at get_supported_prompt_template_variables

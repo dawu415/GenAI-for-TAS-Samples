@@ -267,7 +267,6 @@ class GetEmbeddingContent(Resource):
             results = RAG_PROVIDER.get_embedding_content(query=query, 
                                                          topic_display_name=topic_display_name)    
             
-
             statistics = RAG_PROVIDER.gather_statistics(chunks=results,
                                                         query=query, 
                                                         topic_display_name=topic_display_name)
@@ -376,7 +375,9 @@ def initialize_and_start_service(args):
     use_legacy_openaiapi = bool(cf_env.get_service(name='llm-config').credentials['use_legacy_openaiapi']) if cf_env.get_service(name='llm-config') and 'use_legacy_openaiapi' in cf_env.get_service(name='llm-config').credentials else False
     hf_token = cf_env.get_service(name='llm-config').credentials['huggingface_token'] if cf_env.get_service(name='llm-config')  and 'huggingface_token' in cf_env.get_service(name='llm-config').credentials else ""
 
-    os.environ["HF_TOKEN"] = hf_token
+    if hf_token:
+        os.environ["HF_TOKEN"] = hf_token
+    
     # Model and chunk sizes
     embed_model_name = args.embedding_model if args.embedding_model else os.environ.get("EMBED_MODEL", "hkunlp/instructor-xl")
     is_instructor_model = args.embed_model_is_instructor if args.embed_model_is_instructor else bool(os.environ.get("EMBED_MODEL_IS_INSTRUCTOR", "true").lower()=="true")        
